@@ -11,7 +11,7 @@ class kQueue:
         self.size = 0
     def add(self,value):
         new_node = DoubleListNode(value)
-        if self.first == None and self.last == None:
+        if self.size == 0:
             self.first = new_node
             self.last = new_node
         else:
@@ -23,7 +23,7 @@ class kQueue:
         self.size +=1
      
     def remove(self):
-        if not self.first:
+        if self.size == 0:
             return False
         return_value = self.first.val
         self.first = self.first.prev
@@ -76,8 +76,8 @@ minibatch_size = d_input_size
 d_learning_rate = 2e-4  # 2e-4
 g_learning_rate = 2e-4
 optim_betas = (0.9, 0.999)
-num_epochs = 30000
-print_interval = 200
+num_epochs = 100
+print_interval = 10
 d_steps = 1  # 'k' steps in the original GAN paper. Can put the discriminator on higher training freq than generator
 g_steps = 1
 
@@ -140,12 +140,13 @@ D_queue = kQueue(q_size)
 G_queue = kQueue(q_size)
 #initialize the Queue with a fresh D,G
 first_discrim = Discriminator(input_size=d_input_func(d_input_size), hidden_size=d_hidden_size, output_size=d_output_size)
-first_gen =   Generator(input_size=g_input_size, hidden_size=g_hidden_size, output_size=g_output_size)   
+first_gen = Generator(input_size=g_input_size, hidden_size=g_hidden_size, output_size=g_output_size)   
 
-D.add(first_discrim)
-G.add(first_gen)
+D_queue.add(first_discrim)
+G_queue.add(first_gen)
 
-while not stopping_condition:
+#print(G_queue)
+for i in range(10):
     #stopping condition is when the newest discrimator outputs real/fake with .5 + epsilon probability. Not sure how to code that. Or, it could just be more
     #simply a set number of epochs.  I'll leave this ambiguous for now.
 
@@ -156,6 +157,7 @@ while not stopping_condition:
     for i in range(G_size):
     #this "for" is so we don't run through the elements in the queue more than one time
         G = G_queue.remove()
+        #print(G)
         #take the top element of the queue. Now, do just the discrimator training from as given in the medium article code
 
 
@@ -185,7 +187,7 @@ while not stopping_condition:
                 d_fake_error = criterion(d_fake_decision, Variable(torch.zeros(1)))  # zeros = fake
                 d_fake_error.backward()
                 d_optimizer.step()     # Only optimizes D's parameters; changes based on stored gradients from backward()
-
+        #print("REACHED")
         G_queue.add(G)
         #add the element to the end of the queue so the structure is preserved. Note that due to the fixed length of the queue, this command will implicitly remove
         #elements as we go to the queue_size variable
@@ -201,28 +203,44 @@ while not stopping_condition:
     for i in range(D_size):
 
         D = D_queue.remove()
+        for epoch in range(num_epochs):
+            for d_index in range(d_steps):
+                # 1. Train D on real+fake
+                D.zero_grad()
 
+                #  1A: Train D on real
+                d_real_data = Variable(d_sampler(d_input_size))
+                d_real_decision = D(preprocess(d_real_data))
+                d_real_error = criterion(d_real_decision, Variable(torch.ones(1)))  # ones = true
+                d_real_error.backward() # compute/store gradients, but don't change params
 
-        for g_index in range(g_steps):
+                #  1B: Train D on fake
+                d_gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
+                d_fake_data = G(d_gen_input).detach()  # detach to avoid training G on these labels
+                d_fake_decision = D(preprocess(d_fake_data.t()))
+                d_fake_error = criterion(d_fake_decision, Variable(torch.zeros(1)))  # zeros = fake
+                d_fake_error.backward()
+
+            for g_index in range(g_steps):
             # 2. Train G on D's response (but DO NOT train D on these labels)
-            G.zero_grad()
+                G.zero_grad()
 
-            gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
-            g_fake_data = G(gen_input)
-            dg_fake_decision = D(preprocess(g_fake_data.t()))
-            g_error = criterion(dg_fake_decision, Variable(torch.ones(1)))  # we want to fool, so pretend it's all genuine
+                gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
+                g_fake_data = G(gen_input)
+                dg_fake_decision = D(preprocess(g_fake_data.t()))
+                g_error = criterion(dg_fake_decision, Variable(torch.ones(1)))  # we want to fool, so pretend it's all genuine
 
-            g_error.backward()
-            g_optimizer.step()  # Only optimizes G's parameters
+                g_error.backward()
+                g_optimizer.step()  # Only optimizes G's parameters
 
-        if epoch % print_interval == 0:
-            print("%s: D: %s/%s G: %s (Real: %s, Fake: %s) " % (epoch,
-                                                                extract(d_real_error)[0],
-                                                                extract(d_fake_error)[0],
-                                                                extract(g_error)[0],
-                                                                stats(extract(d_real_data)),
-                                                                stats(extract(d_fake_data))))
+            if epoch % print_interval == 0:
+                print("%s: D: %s/%s G: %s (Real: %s, Fake: %s) " % (epoch,
+                                                                    extract(d_real_error)[0],
+                                                                    extract(d_fake_error)[0],
+                                                                    extract(g_error)[0],
+                                                                    stats(extract(d_real_data)),
+                                                                    stats(extract(d_fake_data))))
 
         D_queue.add(D)
-
+        print("REACHED")
     G_queue.add(G)
