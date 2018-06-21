@@ -242,5 +242,5 @@ for i in range(10):
                                                                     stats(extract(d_fake_data))))
 
         D_queue.add(D)
-        print("REACHED")
+        #print("REACHED")
     G_queue.add(G)
