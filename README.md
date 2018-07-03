@@ -9,3 +9,4 @@ https://github.com/devnag/pytorch-generative-adversarial-networks
 
 It's currently implemented on MOGs - that's the file fGAN.py
 
+The possible_MNIST_model file is taken from https://github.com/yihui-he/GAN-MNIST, with the intent of eventually making an fGAN for the MNIST dataset.
