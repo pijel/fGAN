@@ -1,6 +1,6 @@
 # fGAN
 
-An fGAN is a meta algorthim for GANs based on the fictitious play algorithm in game theory.
+An fGAN is a meta algorithm for GANs based on the fictitious play algorithm in game theory.
 The paper in which it was introduced can be found here:
 https://arxiv.org/abs/1803.08647
 
