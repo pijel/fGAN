@@ -76,7 +76,7 @@ minibatch_size = d_input_size
 d_learning_rate = 2e-4  # 2e-4
 g_learning_rate = 2e-4
 optim_betas = (0.9, 0.999)
-num_epochs = 100
+num_epochs = 200
 print_interval = 10
 d_steps = 1  # 'k' steps in the original GAN paper. Can put the discriminator on higher training freq than generator
 g_steps = 1
@@ -133,7 +133,7 @@ def decorate_with_diffs(data, exponent):
     diffs = torch.pow(data - Variable(mean_broadcast), exponent)
     return torch.cat([data, diffs], 1)
 
-q_size = 40 
+q_size = 3 
 #placeholder value
 
 D_queue = kQueue(q_size)
@@ -255,10 +255,28 @@ import matplotlib.pyplot as plt
 
 final_generator = G_queue.last.val
 final_discrim = D_queue.last.val
-real_data =  get_distribution_sampler(data_mean, data_stddev)
-real_sample = Variable(real_data(d_input_size))
+
+
+final_generator.zero_grad()
 gi_sampler = get_generator_input_sampler()
 gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
-fake_sample = final_generator(gen_input)
+g_fake_data = final_generator(gen_input)
+fake_sample = g_fake_data.data.numpy()
 
-fake_sample
+d_sampler = get_distribution_sampler(data_mean, data_stddev)
+d_real_data = Variable(d_sampler(d_input_size))
+real_data = d_real_data.data.numpy()
+
+    
+    
+
+
+print(real_sample)
+print(fake_sample)
+
+
+
+plt.scatter(fake_sample[:,0],np.zeros(minibatch_size), label='Fake', marker='+', color='r')
+plt.scatter(real_data,np.zeros(minibatch_size),label='Real',marker = '+',color = 'b')
+plt.legend()
+plt.show()
