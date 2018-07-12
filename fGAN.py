@@ -253,8 +253,8 @@ for i in range(10):
 print("Training has been completed")
 import matplotlib.pyplot as plt
 
-final_generator = G_queue.peek()
-final_discrim = D_queue.peek()
+final_generator = G_queue.last.val
+final_discrim = D_queue.last.val
 real_data =  get_distribution_sampler(data_mean, data_stddev)
 real_sample = Variable(real_data(d_input_size))
 gi_sampler = get_generator_input_sampler()
