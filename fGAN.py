@@ -145,8 +145,13 @@ first_gen = Generator(input_size=g_input_size, hidden_size=g_hidden_size, output
 D_queue.add(first_discrim)
 G_queue.add(first_gen)
 
-#print(G_queue)
+
+#It might be the case that the gaussian distribution is changing everytime with new calls of the get_distribution_sampler function,
+#which is decidedly bad. 
+#Never mind, it seems that it's initialized to the same thing every time. It could be useful to just store it memory to save computing time?
+
 for i in range(10):
+    
     #stopping condition is when the newest discrimator outputs real/fake with .5 + epsilon probability. Not sure how to code that. Or, it could just be more
     #simply a set number of epochs.  I'll leave this ambiguous for now.
 
@@ -233,14 +238,27 @@ for i in range(10):
                 g_error.backward()
                 g_optimizer.step()  # Only optimizes G's parameters
 
-            if epoch % print_interval == 0:
-                print("%s: D: %s/%s G: %s (Real: %s, Fake: %s) " % (epoch,
-                                                                    extract(d_real_error)[0],
-                                                                    extract(d_fake_error)[0],
-                                                                    extract(g_error)[0],
-                                                                    stats(extract(d_real_data)),
-                                                                    stats(extract(d_fake_data))))
+            #if epoch % print_interval == 0:
+                #print("%s: D: %s/%s G: %s (Real: %s, Fake: %s) " % (epoch,
+                                                                    #extract(d_real_error)[0],
+                                                                    #extract(d_fake_error)[0],
+                                                                    #extract(g_error)[0],
+                                                                    #stats(extract(d_real_data)),
+                                                                    #stats(extract(d_fake_data))))
 
         D_queue.add(D)
         #print("REACHED")
     G_queue.add(G)
+    
+print("Training has been completed")
+import matplotlib.pyplot as plt
+
+final_generator = G_queue.peek()
+final_discrim = D_queue.peek()
+real_data =  get_distribution_sampler(data_mean, data_stddev)
+real_sample = Variable(real_data(d_input_size))
+gi_sampler = get_generator_input_sampler()
+gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
+fake_sample = final_generator(gen_input)
+
+fake_sample
