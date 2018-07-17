@@ -62,7 +62,7 @@ from torch.autograd import Variable
 
 # Data params
 data_mean = 4
-data_stddev = 1.25
+data_stddev = 0
 
 # Model params
 g_input_size = 1     # Random noise dimension coming into generator, per output vector
@@ -79,7 +79,7 @@ optim_betas = (0.9, 0.999)
 num_epochs = 200
 print_interval = 10
 d_steps = 1  # 'k' steps in the original GAN paper. Can put the discriminator on higher training freq than generator
-g_steps = 2
+g_steps = 1
 
 # ### Uncomment only one of these
 #(name, preprocess, d_input_func) = ("Raw data", lambda data: data, lambda x: x)
@@ -150,7 +150,7 @@ G_queue.add(first_gen)
 #which is decidedly bad. 
 #Never mind, it seems that it's initialized to the same thing every time. It could be useful to just store it memory to save computing time?
 
-for i in range(20):
+for i in range(10):
     
     #stopping condition is when the newest discrimator outputs real/fake with .5 + epsilon probability. Not sure how to code that. Or, it could just be more
     #simply a set number of epochs.  I'll leave this ambiguous for now.
@@ -220,8 +220,16 @@ for i in range(20):
     D_size = D_queue.size
 
     for i in range(D_size):
+        
 
         D = D_queue.remove()
+        d_sampler = get_distribution_sampler(data_mean, data_stddev)
+        gi_sampler = get_generator_input_sampler()
+        #G = Generator(input_size=g_input_size, hidden_size=g_hidden_size, output_size=g_output_size)
+        #D = Discriminator(input_size=d_input_func(d_input_size), hidden_size=d_hidden_size, output_size=d_output_size)
+        criterion = nn.BCELoss()  # Binary cross entropy: http://pytorch.org/docs/nn.html#bceloss
+        d_optimizer = optim.Adam(D.parameters(), lr=d_learning_rate, betas=optim_betas)
+        g_optimizer = optim.Adam(G.parameters(), lr=g_learning_rate, betas=optim_betas)
         for epoch in range(num_epochs):
             for d_index in range(d_steps):
                 # 1. Train D on real+fake
