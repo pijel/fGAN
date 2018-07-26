@@ -247,6 +247,7 @@ for i in range(10):
                 d_fake_decision = D(preprocess(d_fake_data.t()))
                 d_fake_error = criterion(d_fake_decision, Variable(torch.zeros(1)))  # zeros = fake
                 d_fake_error.backward()
+                d_optimizer.step()
 
             for g_index in range(g_steps):
             # 2. Train G on D's response (but DO NOT train D on these labels)
