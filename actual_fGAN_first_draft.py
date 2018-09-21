@@ -113,10 +113,10 @@ def generator_strategy(gen_array,output_size):
         generator_choice = random.randint(0,len(gen_array)-1)
         index = random.randint(0,output_size - 1)
         
-        out.append(fake_data_array[generator_choice][index])
+        out.append([fake_data_array[generator_choice][index]])
     
     #!!! dim is only 0 for this 1d mog !!!
-    return torch.cat(out,dim = 0)
+    return torch.tensor((out))
 
 def discriminator_strategy(dis_array,faked_data):
     #dis_collection is an array of discriminators
@@ -138,7 +138,7 @@ for i in range(10):
     #stopping condition is when the newest discrimator outputs real/fake with .5 + epsilon probability. Not sure how to code that. Or, it could just be more
     #simply a set number of epochs.  I'll leave this ambiguous for now.
 
-    new_d = Discriminator(input_size=d_input_func(d_input_size), hidden_size=d_hidden_size, output_size=d_output_size)
+    D = Discriminator(input_size=d_input_func(d_input_size), hidden_size=d_hidden_size, output_size=d_output_size)
     #make a new discrimator, to train against each of the generators
     d_sampler = get_distribution_sampler(data_mean, data_stddev)
     gi_sampler = get_generator_input_sampler()
@@ -151,7 +151,7 @@ for i in range(10):
        
     for d_index in range(d_steps):
          # 1. Train D on real+fake
-        new_d.zero_grad()
+        D.zero_grad()
 
         #  1A: Train D on real
         d_real_data = Variable(d_sampler(d_input_size))
@@ -161,7 +161,7 @@ for i in range(10):
 
         #  1B: Train D on fake
         d_gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
-        new_d(preprocess(generator_strategy(G_queue, d_input_size).t()))
+        d_fake_decision = D(preprocess(generator_strategy(G_queue, d_input_size).t()))
         d_fake_error = criterion(d_fake_decision, Variable(torch.zeros(1)))  # zeros = fake
         d_fake_error.backward()
         d_optimizer.step()     # Only optimizes D's parameters; changes based on stored gradients from backward()
@@ -173,12 +173,12 @@ for i in range(10):
     #add the newly trained element back into the discrimator queue
 
     #the modifications made below are largely the same as above. Maybe it's a good idea to also modify the print statement below, in order to get more relevant metrics 
-    new_g = Generator(input_size=g_input_size, hidden_size=g_hidden_size, output_size=g_output_size)   
+    G = Generator(input_size=g_input_size, hidden_size=g_hidden_size, output_size=g_output_size)   
     g_optimizer = optim.Adam(G.parameters(), lr=g_learning_rate, betas=optim_betas)  
 
     for g_index in range(g_steps):
         # 2. Train G on D's response (but DO NOT train D on these labels)
-            new_g.zero_grad()
+            G.zero_grad()
 
             gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
             g_fake_data = G(gen_input)
@@ -190,7 +190,7 @@ for i in range(10):
 
 
 
-    D_queue.append(new_d)
+    D_queue.append(D)
     G_queue.append(G)
     
     if len(D_queue)>window_size:
@@ -199,27 +199,26 @@ for i in range(10):
         G_queue.pop(0)
     
 print("Training has been completed")
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
-final_generator = G_queue.last.val
-final_discrim = D_queue.last.val
+#final_generator = G_queue.last.val
+#final_discrim = D_queue.last.val
 
 
-final_generator.zero_grad()
-gi_sampler = get_generator_input_sampler()
-gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
-g_fake_data = final_generator(gen_input)
-fake_sample = g_fake_data.data.numpy()
+#final_generator.zero_grad()
+#gi_sampler = get_generator_input_sampler()
+#gen_input = Variable(gi_sampler(minibatch_size, g_input_size))
+#g_fake_data = final_generator(gen_input)
+#fake_sample = g_fake_data.data.numpy()
 
-d_sampler = get_distribution_sampler(data_mean, data_stddev)
-d_real_data = Variable(d_sampler(d_input_size))
-real_data = d_real_data.data.numpy()
+#d_sampler = get_distribution_sampler(data_mean, data_stddev)
+#d_real_data = Variable(d_sampler(d_input_size))
+#real_data = d_real_data.data.numpy()
 
-print(fake_sample)
-print(real_data)
+#print(fake_sample)
+#print(real_data)
 
-plt.scatter(fake_sample[:,0],np.zeros(minibatch_size), label='Fake', marker='+', color='r')
-plt.scatter(real_data,np.zeros(minibatch_size),label='Real',marker = '+',color = 'b')
-plt.legend()
-plt.show()
-    
+#plt.scatter(fake_sample[:,0],np.zeros(minibatch_size), label='Fake', marker='+', color='r')
+#plt.scatter(real_data,np.zeros(minibatch_size),label='Real',marker = '+',color = 'b')
+#plt.legend()
+#plt.show()
