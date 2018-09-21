@@ -21,7 +21,7 @@ def generator_strategy(gen_array,output_size):
         generator_choice = random.randint(0,len(gen_array)-1)
         index = random.randint(0,output_size - 1)
         
-        out.append(fake_data_array[generator_choice][index])
+        out.append([fake_data_array[generator_choice][index]])
     
-    #!!! dim is only 0 for this 1d mog !!!
-    return torch.cat(out,dim = 0)
+    
+    return torch.tensor((out))
